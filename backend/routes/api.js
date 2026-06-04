@@ -32,6 +32,10 @@ const dataFilePath = path.join(__dirname, '../data/policies.json');
 
 // Ensure data file exists
 const initDataFile = () => {
+  const dir = path.dirname(dataFilePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
   if (!fs.existsSync(dataFilePath)) {
     fs.writeFileSync(dataFilePath, JSON.stringify([]));
   }
@@ -61,12 +65,20 @@ router.post('/policies', (req, res) => {
       createdAt: new Date().toISOString()
     };
 
-    const policies = JSON.parse(fs.readFileSync(dataFilePath, 'utf8'));
+    let policies = [];
+    try {
+      const fileContent = fs.readFileSync(dataFilePath, 'utf8');
+      policies = fileContent ? JSON.parse(fileContent) : [];
+    } catch (err) {
+      console.warn("Could not read policies file, initializing empty array.");
+    }
+    
     policies.push(newPolicy);
     fs.writeFileSync(dataFilePath, JSON.stringify(policies, null, 2));
 
     res.json({ success: true, message: "Policy saved" });
   } catch (error) {
+    console.error("Save Policy Error:", error);
     res.status(500).json({ success: false, error: "Failed to save policy" });
   }
 });
@@ -90,8 +102,14 @@ router.get('/policies/export', (req, res) => {
       return res.status(404).json({ success: false, error: "No policies to export" });
     }
 
+    const formattedPolicies = policies.map(p => ({
+      ...p,
+      expiryDate: p.expiryDate ? `="${p.expiryDate}"` : '',
+      createdAt: p.createdAt ? `="${p.createdAt}"` : ''
+    }));
+
     const fields = ['id', 'policyNumber', 'insuredName', 'insurerName', 'premiumAmount', 'expiryDate', 'createdAt'];
-    const csv = parse(policies, { fields });
+    const csv = parse(formattedPolicies, { fields });
 
     res.header('Content-Type', 'text/csv');
     res.attachment('policies.csv');

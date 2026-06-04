@@ -14,9 +14,9 @@ const extractPolicyData = async (fileBuffer, mimeType) => {
 
     const prompt = `
       Extract the following fields from the provided insurance policy data/document:
-      - policyNumber (string)
+      - policyNumber (string, extract the full policy number exactly as it appears without truncating)
       - insuredName (string)
-      - insurerName (string)
+      - insurerName (string, extract the full name without truncating)
       - premiumAmount (number or string)
       - expiryDate (YYYY-MM-DD format, string)
 
